@@ -1,6 +1,8 @@
 defmodule Server do
   use Application
 
+  @crlf "\r\n"
+
   def start(_type, _args) do
     Supervisor.start_link([{Task, fn -> Server.listen() end}], strategy: :one_for_one)
   end
@@ -16,7 +18,21 @@ defmodule Server do
     {:ok, socket} = :gen_tcp.listen(4221, [:binary, active: false, reuseaddr: true])
     {:ok, client} = :gen_tcp.accept(socket)
 
-    response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+    # receive all data, no length limit
+    {:ok, packet} = :gen_tcp.recv(client, 0)
+    [request_line | _] = String.split(packet, @crlf)
+    [_method, path, _] = String.split(request_line, " ")
+
+    response_code =
+      if path == "/" do
+        "200 OK"
+      else
+        "404 Not Found"
+      end
+
+    IO.inspect(packet)
+
+    response = "HTTP/1.1 #{response_code}\r\nContent-Length: 0\r\n\r\n"
     :gen_tcp.send(client, response)
   end
 end
