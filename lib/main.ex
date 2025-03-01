@@ -11,11 +11,22 @@ defmodule Server do
     # Since the tester restarts your program quite often, setting SO_REUSEADDR
     # ensures that we don't run into 'Address already in use' errors
     {:ok, socket} = :gen_tcp.listen(4221, [:binary, active: false, reuseaddr: true])
-    {:ok, client} = :gen_tcp.accept(socket)
+    accept_loop(socket)
+  end
 
+  defp accept_loop(listening_socket) do
+    {:ok, client} = :gen_tcp.accept(listening_socket)
+    spawn(fn -> serve(client) end)
+    accept_loop(listening_socket)
+  end
+
+  defp serve(client) do
     {:ok, packet} = :gen_tcp.recv(client, 0)
-    request = Request.parse(packet)
-    response = Router.route(request)
+
+    response =
+      packet
+      |> Request.parse()
+      |> Router.route()
 
     :gen_tcp.send(client, response)
     :gen_tcp.close(client)
