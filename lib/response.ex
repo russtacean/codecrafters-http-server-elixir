@@ -1,7 +1,11 @@
 defmodule Response do
   @crlf "\r\n"
+
+  # defaults
   @protocol "HTTP/1.1"
   @content_type "text/plain"
+
+  # Response codes
   @ok "200 OK"
   @not_found "404 Not Found"
 
@@ -9,8 +13,8 @@ defmodule Response do
     build(:ok)
   end
 
-  def ok_with_body(body) do
-    build_with_body(:ok, body)
+  def ok_with_body(body, content_type \\ @content_type) do
+    build_with_body(:ok, body, content_type)
   end
 
   def not_found do
@@ -22,9 +26,9 @@ defmodule Response do
     "#{status_line}#{@crlf}#{@crlf}"
   end
 
-  def build_with_body(status_code, body) do
+  def build_with_body(status_code, body, content_type \\ @content_type) do
     status_line = build_status_line(status_code)
-    headers = build_headers(body)
+    headers = build_headers(body, content_type)
     "#{status_line}#{@crlf}#{headers}#{@crlf}#{body}"
   end
 
@@ -38,18 +42,19 @@ defmodule Response do
     "#{@protocol} #{response}"
   end
 
-  defp build_headers(body) do
-    content_type = content_type(body)
-    content_length = content_length(body)
+  defp build_headers(body, requested_content_type) do
+    has_body = String.length(body) > 0
+    content_type = build_content_type(has_body, requested_content_type)
+    content_length = content_length(has_body, body)
     headers = "#{content_type}#{content_length}"
     if String.ends_with?(headers, @crlf), do: headers, else: "#{headers}#{@crlf}"
   end
 
-  defp content_type(body) do
-    if String.length(body) > 0, do: "Content-Type: #{@content_type}#{@crlf}", else: ""
+  defp build_content_type(has_body, content_type) do
+    if has_body, do: "Content-Type: #{content_type}#{@crlf}", else: ""
   end
 
-  defp content_length(body) do
-    if String.length(body) > 0, do: "Content-Length: #{byte_size(body)}#{@crlf}", else: ""
+  defp content_length(has_body, body) do
+    if has_body, do: "Content-Length: #{byte_size(body)}#{@crlf}", else: ""
   end
 end

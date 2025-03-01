@@ -3,17 +3,18 @@ defmodule Router do
   alias Echo
 
   def route(request) do
-    IO.inspect(request)
-
     cond do
       request.path == "/" ->
         Response.ok()
 
+      String.starts_with?(request.path, "/echo") ->
+        Echo.echo(request)
+
+      String.starts_with?(request.path, "/files") ->
+        Files.get_file(request)
+
       request.path == "/user-agent" ->
         Response.ok_with_body(request.user_agent)
-
-      String.starts_with?(request.path, "/echo") ->
-        Response.ok_with_body(Echo.get_body(request.path))
 
       true ->
         Response.not_found()

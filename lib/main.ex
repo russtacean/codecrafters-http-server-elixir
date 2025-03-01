@@ -16,6 +16,7 @@ defmodule Server do
 
   defp accept_loop(listening_socket) do
     {:ok, client} = :gen_tcp.accept(listening_socket)
+
     spawn(fn -> serve(client) end)
     accept_loop(listening_socket)
   end
@@ -34,7 +35,13 @@ defmodule Server do
 end
 
 defmodule CLI do
-  def main(_args) do
+  @default_dir "/tmp/"
+
+  def main(args) do
+    {parsed_options, _, _} = OptionParser.parse(args, strict: [directory: :string])
+    directory = Keyword.get(parsed_options, :directory, @default_dir)
+    Application.put_env(:codecrafters_http_server, :directory, directory)
+
     # Start the Server application
     {:ok, _pid} = Application.ensure_all_started(:codecrafters_http_server)
 
