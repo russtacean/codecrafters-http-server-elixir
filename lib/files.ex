@@ -10,6 +10,16 @@ defmodule Files do
     end
   end
 
+  def write_file(request) do
+    file_path = get_file_path(request.path)
+    body = request.body
+
+    case File.write(file_path, body) do
+      :ok -> Response.created()
+      _ -> Response.internal_server_error()
+    end
+  end
+
   defp get_file_path(request_path) do
     # request_path is in the format "/files/<sub_dir>/<file>", so ignore the split from before root and for files path
     requested_sub_dir =

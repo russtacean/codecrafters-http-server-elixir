@@ -11,7 +11,10 @@ defmodule Router do
         Echo.echo(request)
 
       String.starts_with?(request.path, "/files") ->
-        Files.get_file(request)
+        case request.method do
+          "GET" -> Files.get_file(request)
+          "POST" -> Files.write_file(request)
+        end
 
       request.path == "/user-agent" ->
         Response.ok_with_body(request.user_agent)

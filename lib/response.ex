@@ -8,7 +8,10 @@ defmodule Response do
   # Response codes
   @ok "200 OK"
   @not_found "404 Not Found"
+  @created "201 Created"
+  @ise "500 Internal Server Error"
 
+  # 2XX Codes
   def ok do
     build(:ok)
   end
@@ -17,8 +20,18 @@ defmodule Response do
     build_with_body(:ok, body, content_type)
   end
 
+  def created do
+    build(:created)
+  end
+
+  # 4XX Codes
   def not_found do
     build(:not_found)
+  end
+
+  # 5XX Codes
+  def internal_server_error do
+    build(:ise)
   end
 
   def build(status_code) do
@@ -37,6 +50,8 @@ defmodule Response do
       cond do
         status_code == :ok -> @ok
         status_code == :not_found -> @not_found
+        status_code == :created -> @created
+        status_code == :ise -> @ise
       end
 
     "#{@protocol} #{response}"
