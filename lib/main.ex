@@ -8,11 +8,6 @@ defmodule Server do
   end
 
   def listen() do
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
-    IO.puts("Logs from your program will appear here!")
-
-    # Uncomment this block to pass the first stage
-
     # Since the tester restarts your program quite often, setting SO_REUSEADDR
     # ensures that we don't run into 'Address already in use' errors
     {:ok, socket} = :gen_tcp.listen(4221, [:binary, active: false, reuseaddr: true])
@@ -23,17 +18,43 @@ defmodule Server do
     [request_line | _] = String.split(packet, @crlf)
     [_method, path, _] = String.split(request_line, " ")
 
+    is_echo = String.starts_with?(path, "/echo")
+    status_line = get_status_line(path, is_echo)
+    body = get_body(path, is_echo)
+    headers = get_headers(body)
+    response = "#{status_line}#{@crlf}#{headers}#{@crlf}#{body}"
+
+    :gen_tcp.send(client, response)
+  end
+
+  def get_status_line(path, is_echo) do
     response_code =
-      if path == "/" do
-        "200 OK"
-      else
-        "404 Not Found"
+      cond do
+        path == "/" -> "200 OK"
+        is_echo -> "200 OK"
+        true -> "404 Not Found"
       end
 
-    IO.inspect(packet)
+    "HTTP/1.1 #{response_code}"
+  end
 
-    response = "HTTP/1.1 #{response_code}\r\nContent-Length: 0\r\n\r\n"
-    :gen_tcp.send(client, response)
+  def get_body(path, is_echo) do
+    if is_echo, do: String.split(path, "/") |> Enum.at(2), else: ""
+  end
+
+  def get_headers(body) do
+    content_type = get_content_type(body)
+    content_length = get_content_length(body)
+    headers = "#{content_type}#{content_length}"
+    if String.ends_with?(headers, @crlf), do: headers, else: "#{headers}#{@crlf}"
+  end
+
+  def get_content_type(body) do
+    if body, do: "Content-Type: text/plain#{@crlf}", else: ""
+  end
+
+  def get_content_length(body) do
+    if body, do: "Content-Length: #{byte_size(body)}#{@crlf}", else: ""
   end
 end
 
