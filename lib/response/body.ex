@@ -18,18 +18,23 @@ defmodule Response.Body do
     }
   end
 
-  def encode_body(response_body, accepted_encoding) do
-    content_encoding = if accepted_encoding == @gzip, do: @gzip, else: nil
+  def encode_body(response_body, request_headers) do
+    is_gzip =
+      request_headers.accept_encoding
+      |> Enum.any?(fn encoding -> encoding == @gzip end)
+
+    content_encoding =
+      if is_gzip, do: @gzip, else: nil
 
     %__MODULE__{
-      payload: encode_payload(response_body.payload, content_encoding),
+      payload: encode_payload(response_body.payload, is_gzip),
       content_type: response_body.content_type,
       content_encoding: content_encoding
     }
   end
 
-  defp encode_payload(payload, accepted_encoding) do
-    if accepted_encoding == @gzip do
+  defp encode_payload(payload, is_gzip) do
+    if is_gzip do
       :zlib.compress(payload)
     else
       payload

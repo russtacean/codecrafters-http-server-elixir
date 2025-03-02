@@ -21,15 +21,25 @@ defmodule Server do
 
   defp serve(client) do
     {:ok, packet} = :gen_tcp.recv(client, 0)
+
+    try do
+      response = handle_request_packet(packet)
+      :gen_tcp.send(client, response)
+      :gen_tcp.close(client)
+    catch
+      _ ->
+        response = Response.internal_server_error() |> Response.to_string()
+        :gen_tcp.send(client, response)
+        :gen_tcp.close(client)
+    end
+  end
+
+  defp handle_request_packet(packet) do
     request = Request.parse(packet)
 
-    response =
-      Router.route(request)
-      |> Response.encode_body(request.headers.accept_encoding)
-      |> Response.to_string()
-
-    :gen_tcp.send(client, response)
-    :gen_tcp.close(client)
+    Router.route(request)
+    |> Response.encode_body(request.headers)
+    |> Response.to_string()
   end
 end
 

@@ -19,12 +19,6 @@ defmodule Response do
     build_response(status_code)
   end
 
-  @doc """
-  Produces an HTTP response struct
-
-  Options:
-    - :content_type - the content type of the response
-  """
   def response(status_code, body, content_type \\ @content_type) do
     build_response(status_code, body, content_type)
   end
