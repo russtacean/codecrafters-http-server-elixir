@@ -1,4 +1,8 @@
 defmodule Response do
+  alias Response.Headers
+  alias Response.Body
+  defstruct [:status_code, :headers, :body]
+
   @crlf "\r\n"
 
   # defaults
@@ -6,70 +10,87 @@ defmodule Response do
   @content_type "text/plain"
 
   # Response codes
-  @ok "200 OK"
-  @not_found "404 Not Found"
-  @created "201 Created"
-  @ise "500 Internal Server Error"
+  @ok 200
+  @created 201
+  @not_found 404
+  @ise 500
+
+  def response(status_code) when is_number(status_code) do
+    build_response(status_code)
+  end
+
+  @doc """
+  Produces an HTTP response struct
+
+  Options:
+    - :content_type - the content type of the response
+  """
+  def response(status_code, body, content_type \\ @content_type) do
+    build_response(status_code, body, content_type)
+  end
+
+  def to_string(response) do
+    status_line = build_status_line(response.status_code)
+    headers_string = Headers.to_string(response.headers)
+    "#{status_line}#{@crlf}#{headers_string}#{@crlf}#{response.body.payload}"
+  end
 
   # 2XX Codes
-  def ok do
-    build(:ok)
+  def ok() do
+    response(@ok)
   end
 
-  def ok_with_body(body, content_type \\ @content_type) do
-    build_with_body(:ok, body, content_type)
+  def ok(body, content_type \\ @content_type) do
+    response(@ok, body, content_type)
   end
 
-  def created do
-    build(:created)
+  def created() do
+    response(@created)
   end
 
   # 4XX Codes
-  def not_found do
-    build(:not_found)
+  def not_found() do
+    response(@not_found)
   end
 
   # 5XX Codes
-  def internal_server_error do
-    build(:ise)
+  def internal_server_error() do
+    response(@ise)
   end
 
-  def build(status_code) do
-    status_line = build_status_line(status_code)
-    "#{status_line}#{@crlf}#{@crlf}"
+  def encode_body(response, accepted_encoding) do
+    body = Body.encode_body(response.body, accepted_encoding)
+    headers = Headers.from_body(body)
+
+    %__MODULE__{
+      status_code: response.status_code,
+      headers: headers,
+      body: body
+    }
   end
 
-  def build_with_body(status_code, body, content_type \\ @content_type) do
-    status_line = build_status_line(status_code)
-    headers = build_headers(body, content_type)
-    "#{status_line}#{@crlf}#{headers}#{@crlf}#{body}"
+  defp build_response(status_code) when is_number(status_code) do
+    headers = Headers.empty_headers()
+    body = Body.empty_body()
+    %__MODULE__{status_code: status_code, headers: headers, body: body}
+  end
+
+  defp build_response(status_code, body, content_type) do
+    body = Body.build_body(body, content_type)
+    headers = Headers.from_body(body)
+
+    %__MODULE__{status_code: status_code, headers: headers, body: body}
   end
 
   defp build_status_line(status_code) do
-    response =
+    status_explanation =
       cond do
-        status_code == :ok -> @ok
-        status_code == :not_found -> @not_found
-        status_code == :created -> @created
-        status_code == :ise -> @ise
+        status_code == @ok -> "OK"
+        status_code == @created -> "Created"
+        status_code == @not_found -> "Not Found"
+        status_code == @ise -> "Internal Server Error"
       end
 
-    "#{@protocol} #{response}"
-  end
-
-  defp build_headers(body, requested_content_type) do
-    has_body = String.length(body) > 0
-    content_type = build_content_type(has_body, requested_content_type)
-    content_length = content_length(has_body, body)
-    headers = "#{content_type}#{content_length}"
-    if String.ends_with?(headers, @crlf), do: headers, else: "#{headers}#{@crlf}"
-  end
-
-  defp build_content_type(has_body, content_type) do
-    if has_body, do: "Content-Type: #{content_type}#{@crlf}", else: ""
-  end
-
-  defp content_length(has_body, body) do
-    if has_body, do: "Content-Length: #{byte_size(body)}#{@crlf}", else: ""
+    "#{@protocol} #{status_code} #{status_explanation}"
   end
 end

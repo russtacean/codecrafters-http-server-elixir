@@ -1,7 +1,5 @@
 defmodule Server do
   use Application
-  alias Request
-  alias Response
 
   def start(_type, _args) do
     Supervisor.start_link([{Task, fn -> Server.listen() end}], strategy: :one_for_one)
@@ -23,11 +21,12 @@ defmodule Server do
 
   defp serve(client) do
     {:ok, packet} = :gen_tcp.recv(client, 0)
+    request = Request.parse(packet)
 
     response =
-      packet
-      |> Request.parse()
-      |> Router.route()
+      Router.route(request)
+      |> Response.encode_body(request.headers.accept_encoding)
+      |> Response.to_string()
 
     :gen_tcp.send(client, response)
     :gen_tcp.close(client)

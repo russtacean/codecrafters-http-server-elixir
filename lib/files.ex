@@ -5,7 +5,7 @@ defmodule Files do
     file_path = get_file_path(request.path)
 
     case File.read(file_path) do
-      {:ok, contents} -> Response.ok_with_body(contents, @file_content_type)
+      {:ok, contents} -> Response.ok(contents, @file_content_type)
       {:error, _reason} -> Response.not_found()
     end
   end
@@ -21,13 +21,11 @@ defmodule Files do
   end
 
   defp get_file_path(request_path) do
-    # request_path is in the format "/files/<sub_dir>/<file>", so ignore the split from before root and for files path
-    requested_sub_dir =
-      request_path
-      |> String.split("/", parts: 3)
-      |> Enum.at(2)
+    sub_dir =
+      Regex.named_captures(~r/\/files\/(?<subdir>.*)/, request_path)
+      |> Map.get("subdir")
 
     app_directory = Application.get_env(:codecrafters_http_server, :directory)
-    Path.join(app_directory, requested_sub_dir)
+    Path.join(app_directory, sub_dir)
   end
 end
