@@ -35,7 +35,7 @@ defmodule Response.Body do
 
   defp encode_payload(payload, is_gzip) do
     if is_gzip do
-      :zlib.compress(payload)
+      :zlib.gzip(payload)
     else
       payload
     end
