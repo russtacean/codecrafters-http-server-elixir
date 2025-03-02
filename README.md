@@ -1,7 +1,7 @@
 [![progress-banner](https://backend.codecrafters.io/progress/http-server/3ab814df-e21e-4b65-8b62-8045544a19a1)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
 
 # Status: Complete
-My solution exists in the `/lib` directory of this repository. Check out more details about the challenge in the links to code crafters below.
+My solution exists in the `/lib` directory of this repository. Check out more details about the challenge in the links to code crafters below. This includes both the base challenge and the HTTP compression extension challenge.
 
 # Code Crafters Overview
 
